@@ -8,9 +8,6 @@
 require 'sequel'
 require 'set'
 
-$method_name_registry = {}
-$unit_variables = {}
-
 class GenerateMicroserviceChains
 
   attr_reader :db
@@ -260,22 +257,32 @@ def get_user_selection(*ignored); end
 EOF
 
 
-# Run the chains in the order that a simple transfer runs them.
-results = []
-results << GenerateMicroserviceChains.new('%watchDirectoryPath%activeTransfers/standardTransfer').call
-results << GenerateMicroserviceChains.new('%watchDirectoryPath%workFlowDecisions/quarantineTransfer').call
-results << GenerateMicroserviceChains.new('%watchDirectoryPath%workFlowDecisions/createTree/').call
-results << GenerateMicroserviceChains.new('%watchDirectoryPath%workFlowDecisions/selectFormatIDToolTransfer/').call
-results << GenerateMicroserviceChains.new('%watchDirectoryPath%workFlowDecisions/extractPackagesChoice/').call
-results << GenerateMicroserviceChains.new('%watchDirectoryPath%workFlowDecisions/examineContentsChoice/').call
-results << GenerateMicroserviceChains.new('%watchDirectoryPath%SIPCreation/completedTransfers/').call
-results << GenerateMicroserviceChains.new('%watchDirectoryPath%system/autoProcessSIP').call
-results << GenerateMicroserviceChains.new('%watchDirectoryPath%workFlowDecisions/selectFormatIDToolIngest/').call
-results << GenerateMicroserviceChains.new('%watchDirectoryPath%approveNormalization/').call
-results << GenerateMicroserviceChains.new('%watchDirectoryPath%workFlowDecisions/metadataReminder/').call
-results << GenerateMicroserviceChains.new('%watchDirectoryPath%uploadDIP/').call
-results << GenerateMicroserviceChains.new('%watchDirectoryPath%workFlowDecisions/compressionAIPDecisions/').call
-results << GenerateMicroserviceChains.new('%watchDirectoryPath%storeAIP/').call
+# Need two passes to make sure we hit all set variable nodes before emitting the
+# pull variable ones.
+$unit_variables = {}
+
+results = nil
+2.times do
+  $method_name_registry = {}
+
+  # Run the chains in the order that a simple transfer runs them.
+  results = []
+  results << GenerateMicroserviceChains.new('%watchDirectoryPath%activeTransfers/standardTransfer').call
+  results << GenerateMicroserviceChains.new('%watchDirectoryPath%workFlowDecisions/quarantineTransfer').call
+  results << GenerateMicroserviceChains.new('%watchDirectoryPath%workFlowDecisions/createTree/').call
+  results << GenerateMicroserviceChains.new('%watchDirectoryPath%workFlowDecisions/selectFormatIDToolTransfer/').call
+  results << GenerateMicroserviceChains.new('%watchDirectoryPath%workFlowDecisions/extractPackagesChoice/').call
+  results << GenerateMicroserviceChains.new('%watchDirectoryPath%workFlowDecisions/examineContentsChoice/').call
+  results << GenerateMicroserviceChains.new('%watchDirectoryPath%SIPCreation/completedTransfers/').call
+  results << GenerateMicroserviceChains.new('%watchDirectoryPath%system/autoProcessSIP').call
+  results << GenerateMicroserviceChains.new('%watchDirectoryPath%workFlowDecisions/selectFormatIDToolIngest/').call
+  results << GenerateMicroserviceChains.new('%watchDirectoryPath%approveNormalization/').call
+  results << GenerateMicroserviceChains.new('%watchDirectoryPath%workFlowDecisions/metadataReminder/').call
+  results << GenerateMicroserviceChains.new('%watchDirectoryPath%uploadDIP/').call
+  results << GenerateMicroserviceChains.new('%watchDirectoryPath%workFlowDecisions/compressionAIPDecisions/').call
+  results << GenerateMicroserviceChains.new('%watchDirectoryPath%storeAIP/').call
+end
+
 seen = []
 
 results.each do |_, methods|
